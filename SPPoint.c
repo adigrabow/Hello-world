@@ -38,6 +38,9 @@ SPPoint spPointCreate(double* data, int dim, int index){
 }
 
 SPPoint spPointCopy(SPPoint source){
+	if (NULL == source) {
+		return NULL;
+	}
 	assert(source != NULL);
 	SPPoint target = malloc(sizeof(struct sp_point_t));
 	if(target == NULL)
@@ -59,12 +62,16 @@ void spPointDestroy(SPPoint point){
 }
 
 int spPointGetDimension(SPPoint point){
-	assert(point != NULL);
+	if (NULL == point) {
+		return -1;
+	}
 	return point->dim;
 }
 
 int spPointGetIndex(SPPoint point){
-	assert(point != NULL);
+	if (NULL == point){
+		return -1;
+	}
 	return point->index;
 }
 
@@ -81,13 +88,18 @@ double spPointGetAxisCoor(SPPoint point, int axis){
 
 
 double * spPointGetData(SPPoint point){
-	assert(point != NULL);
+	if (NULL == point) {
+		return -1.0;
+	}
 	double* dataCopy = (double*) malloc(sizeof(double) * spPointGetDimension(point));
 	memcpy(dataCopy, point->data, sizeof(double) *  spPointGetDimension(point));
 	return dataCopy;
 }
 
 double spPointL2SquaredDistance(SPPoint p, SPPoint q){
+	if (NULL == p || NULL == q || spPointGetDimension(p) != spPointGetDimension(q)) {
+		return -1.0;
+	}
 	assert(p != NULL && q != NULL && p->dim == q->dim);
 	double sum = 0;
 	int i;
@@ -99,7 +111,6 @@ double spPointL2SquaredDistance(SPPoint p, SPPoint q){
 }
 void printPoint(SPPoint p){
 	if (!p){
-			printf("point is null\n");
 			return;
 		}
 	int dim = p->dim;
