@@ -1,0 +1,24 @@
+#this is a valid configuration file
+#The following variables donÕt have default values and must be set
+spImagesDirectory =		./images/
+
+
+ spImagesPrefix= AdiIsAmazing
+spImagesSuffix =   .gif
+spNumOfImages = 111
+
+
+
+#the following variables have default values, if not set the default value is choosen
+  spPCADimension = 28 
+ #-> notice the default value is chosen since this is a comment
+ 
+  spPCAFilename = adigrabow.yml
+spNumOfFeatures = 111
+spExtractionMode = false
+#spMinimalGUI = true -> the default value is chosen since this is a comment
+
+spLoggerLevel = 2
+
+ spNumOfSimilarImages =     111
+	spLoggerFilename = stdout
