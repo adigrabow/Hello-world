@@ -41,7 +41,6 @@ SPPoint spPointCopy(SPPoint source){
 	if (NULL == source) {
 		return NULL;
 	}
-	assert(source != NULL);
 	SPPoint target = malloc(sizeof(struct sp_point_t));
 	if(target == NULL)
 		return NULL;
@@ -100,7 +99,6 @@ double spPointL2SquaredDistance(SPPoint p, SPPoint q){
 	if (NULL == p || NULL == q || spPointGetDimension(p) != spPointGetDimension(q)) {
 		return -1.0;
 	}
-	assert(p != NULL && q != NULL && p->dim == q->dim);
 	double sum = 0;
 	int i;
 	for(i = 0; i < p->dim; i++){
