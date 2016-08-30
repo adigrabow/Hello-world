@@ -64,7 +64,6 @@ int main(){
 
 }
 
-
 /* Use malloc to create the point array.
  * For every image go to .feats and read each line (but the first...)
  * the index of each point will be shown in line 0 + total numOfFeat lines.
@@ -181,7 +180,7 @@ void kNearestNeighbors(kdTree currNode, SPBPQueue bpq, SPPoint queryPoint){
 	double bpqMaxVal = spBPQueueMaxValue(bpq);
 	double currNodeVal = kdTreeGetVal(currNode);
 	int currDimension = kdTreeGetDimension(currNode);
-	double currPointAxisCoor = spPointGetAxisCoor(currPoint,currDimension );
+	double queryPointAxisCoor = spPointGetAxisCoor(queryPoint,currDimension );
 	//	double queryPointAxisCoor =  spPointGetAxisCoor(queryPoint, currDimension);
 
 	/*if currNode is leaf
@@ -189,9 +188,6 @@ void kNearestNeighbors(kdTree currNode, SPBPQueue bpq, SPPoint queryPoint){
 	 *  if the * point is not as good as the points we've seen so far.*/
 	if (NULL != currPoint) {
 
-		if (currPointAxisCoor == -1) {
-			return; //TODO this means we had an error...maybe write to logger something?
-		}
 
 		if (spPointGetDimension(currPoint) != spPointGetDimension(queryPoint)) {
 			//TODO add logger
@@ -219,8 +215,8 @@ void kNearestNeighbors(kdTree currNode, SPBPQueue bpq, SPPoint queryPoint){
 	}
 
 	/* Recursively search the half of the tree that contains the test point. */
-	chosenChild = (currPointAxisCoor <= currNodeVal) ? kdTreeGetLeft(currNode) : kdTreeGetRight(currNode);
-	otherChild = (currPointAxisCoor <= currNodeVal) ? kdTreeGetRight(currNode) : kdTreeGetLeft(currNode);
+	chosenChild = (queryPointAxisCoor <= currNodeVal) ? kdTreeGetLeft(currNode) : kdTreeGetRight(currNode);
+	otherChild = (queryPointAxisCoor <= currNodeVal) ? kdTreeGetRight(currNode) : kdTreeGetLeft(currNode);
 
 	if (NULL == chosenChild) {
 		//TODO add logger
@@ -229,7 +225,7 @@ void kNearestNeighbors(kdTree currNode, SPBPQueue bpq, SPPoint queryPoint){
 
 	kNearestNeighbors(chosenChild, bpq, queryPoint);
 
-	if ((!spBPQueueIsFull(bpq)) || (pow((currNodeVal - currPointAxisCoor),2) < bpqMaxVal )) {
+	if ((!spBPQueueIsFull(bpq)) || (pow((currNodeVal - queryPointAxisCoor),2) < bpqMaxVal )) {
 		kNearestNeighbors(otherChild, bpq, queryPoint);
 	}
 
