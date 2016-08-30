@@ -7,7 +7,6 @@
 
 #include "KDArray.h"
 #include "KDTree.h"
-
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -125,32 +124,50 @@ kdTree init(kdArray kdArr, int * prevIndex, SP_KDTREE_SPLIT_METHOD_TYPE splitMet
 
 }
 
-//TODO chnage all the asserts to -1
 
 int kdTreeGetDimension(kdTree node){
-	assert(node != NULL);
+	if ( NULL == node) {
+		//TODO add logger
+		return -1;
+	}
 	return node->dim;
 }
 
 double kdTreeGetVal(kdTree node){
-	assert(node != NULL);
+
+	if (NULL == node) {
+		//TODO add logger
+		return -1.0;
+	}
 	return node->val;
 }
 
 kdTree  kdTreeGetLeft(kdTree node){
-	assert(node != NULL);
+
+	if (NULL == node){
+		//TODO add logger
+		return NULL;
+	}
 	return node->left;
 }
 
 kdTree  kdTreeGetRight(kdTree node){
-	assert(node != NULL);
+
+	if (NULL == node) {
+		//TODO add logger
+		return NULL;
+	}
 	return node->right;
 }
 
-
 SPPoint kdTreeGetData(kdTree node){
-	assert(node != NULL);
-	if (!(node->data)){
+
+	if (NULL == node){
+		//TODO add logger
+		return NULL;
+	}
+	if (NULL == node->data) {
+		//TODO add logger
 		return NULL;
 	}
 	SPPoint dataCopy = spPointCopy(node->data);
