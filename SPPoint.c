@@ -89,7 +89,7 @@ double spPointGetAxisCoor(SPPoint point, int axis){
 
 double * spPointGetData(SPPoint point){
 	if (NULL == point) {
-		return -1.0;
+		return NULL;
 	}
 	double* dataCopy = (double*) malloc(sizeof(double) * spPointGetDimension(point));
 	memcpy(dataCopy, point->data, sizeof(double) *  spPointGetDimension(point));
