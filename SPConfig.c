@@ -31,7 +31,7 @@ struct sp_config_t{
 	int spKNN;
 	bool spMinimalGUI;
 	int spLoggerLevel;
-//	SP_LOGGER_LEVEL spLoggerLevel;
+	//	SP_LOGGER_LEVEL spLoggerLevel;
 	char spLoggerFilename[MAX_STRING_LEN];
 
 };
@@ -81,8 +81,10 @@ struct sp_config_t{
 /**************************
  * Function Implementation
  * ************************/
+
 /*
 int main(){
+
 	SP_CONFIG_MSG msg = SP_CONFIG_SUCCESS;
 	SPConfig conf = spConfigCreate("a.txt", &msg);
 	printVariableValuesOfConfig(conf);
@@ -116,6 +118,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg){
 	}
 	assignDefaultValues(config);
 
+	/* for each line in the configuration file*/
 	while(fgets(line,n,configFile) != NULL){
 
 		char* string;
@@ -128,19 +131,58 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg){
 
 		if(isLineCommentLine(line))
 			continue;
+
 		string = strtok(line, delimiter);
+
+		/*making sure a non-comment line doesn't contain any Hash signs */
+
+		if (isThereAHashSignInTheMiddleOfTheLine(line)) {
+			printf(INVALID_CONFIG_LINE_ERROR_MSG, filename, configLineCounter );
+			*msg = SP_CONFIG_INVALID_ARGUMENT;
+			free(config);
+			fclose(configFile);
+			return NULL;
+
+		}
+
 
 		while(string != NULL ){
 
 			if(valueFlag == 0){
 				memset(variableName, 0, sizeof(variableName));
 				getCleanWordFromString(string, variableName);
+				/*printf ("Clean variableName =%s\n",variableName);*/
+				/*makes sure the variable name doesn't contain any spaces*/
+/*
+				if (!isStringValid(variableName)) {
+					printf(INVALID_CONFIG_LINE_ERROR_MSG, filename, configLineCounter );
+					*msg = SP_CONFIG_INVALID_ARGUMENT;
+					free(config);
+					fclose(configFile);
+					return NULL;
+
+				}
+*/
 			}
 
 			if(valueFlag == 1){
 				memset(value, 0, sizeof(value));
 				getCleanWordFromString(string, value);
-				assignValueToVariable(config, variableName, value, statusMSG, msg);
+				/*printf ("Clean valueName =%s\n",value);*/
+
+				/*makes sure the value name doesn't contain any spaces*/
+
+				/*
+				if (!isStringValid(value)) {
+					printf(INVALID_CONFIG_LINE_ERROR_MSG, filename, configLineCounter );
+					*msg = SP_CONFIG_INVALID_ARGUMENT;
+					free(config);
+					fclose(configFile);
+					return NULL;
+
+				}*/
+
+				assignValueToVariable(config, variableName, value, statusMSG, msg, filename, configLineCounter);
 
 				if((strncmp(statusMSG, INTERNAL_STATUS_INVALID_CONFIG_LINE, 19) == 0) ||
 						(strncmp(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET, 17) == 0)){
@@ -157,7 +199,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg){
 
 	if(strncmp(config->spImagesDirectory, INTERNAL_DEFAULT_STRING_VALUE,20) == 0){
 
-		printf(PARAMATER_IS_NOT_SET_ERROR_MSG, __FILE__, configLineCounter, "spImagesDirectory");
+		printf(PARAMATER_IS_NOT_SET_ERROR_MSG, filename, configLineCounter, "spImagesDirectory");
 		*msg = SP_CONFIG_MISSING_DIR;
 		free(config);
 		fclose(configFile);
@@ -165,21 +207,21 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg){
 
 	}
 	if(strncmp(config->spImagesPrefix, INTERNAL_DEFAULT_STRING_VALUE,20) == 0){
-		printf(PARAMATER_IS_NOT_SET_ERROR_MSG, __FILE__, configLineCounter, "spImagesPrefix");
+		printf(PARAMATER_IS_NOT_SET_ERROR_MSG, filename, configLineCounter, "spImagesPrefix");
 		*msg = SP_CONFIG_MISSING_PREFIX;
 		free(config);
 		fclose(configFile);
 		return NULL;
 	}
 	if(strncmp(config->spImagesSuffix, INTERNAL_DEFAULT_STRING_VALUE,20) == 0){
-		printf(PARAMATER_IS_NOT_SET_ERROR_MSG, __FILE__, configLineCounter, "spImagesSuffix");
+		printf(PARAMATER_IS_NOT_SET_ERROR_MSG, filename, configLineCounter, "spImagesSuffix");
 		*msg = SP_CONFIG_MISSING_PREFIX;
 		free(config);
 		fclose(configFile);
 		return NULL;
 	}
 	if((config->spNumOfImages == -1)){
-		printf(PARAMATER_IS_NOT_SET_ERROR_MSG, __FILE__, configLineCounter, "spNumOfImages" );
+		printf(PARAMATER_IS_NOT_SET_ERROR_MSG, filename, configLineCounter, "spNumOfImages" );
 		*msg = SP_CONFIG_MISSING_NUM_IMAGES;
 		free(config);
 		fclose(configFile);
@@ -194,8 +236,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg){
 
 
 bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg){
-	assert(msg != NULL);
-	if(config == NULL){
+	if(config == NULL || msg == NULL){
 		*msg = SP_CONFIG_INVALID_ARGUMENT;
 		return false;
 	}
@@ -205,8 +246,8 @@ bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg){
 }
 
 bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg){
-	assert(msg != NULL);
-	if(config == NULL){
+
+	if(NULL == config || NULL == msg){
 		*msg = SP_CONFIG_INVALID_ARGUMENT;
 		return false;
 	}
@@ -366,7 +407,7 @@ SP_KDTREE_SPLIT_METHOD_TYPE spConfigGetspKDTreeSplitMethod(SPConfig config){
  * ****************/
 
 void assignValueToVariable(SPConfig config, char* variableName,
-		char* value, char* statusMSG,  SP_CONFIG_MSG* msg){
+		char* value, char* statusMSG,  SP_CONFIG_MSG* msg, char* configFileName, int configLineCounter ){
 
 
 	if(strncmp(variableName, "spImagesDirectory", 17) == 0){
@@ -401,7 +442,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG, configFileName, configLineCounter );
 		*msg = SP_CONFIG_INVALID_STRING;
 		return;
 	}
@@ -421,7 +462,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 		*msg = SP_CONFIG_INVALID_INTEGER;
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );//TODO change line to be in config file
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG, configFileName, configLineCounter );//TODO change line to be in config file
 		return;
 	}
 	if(strncmp(variableName,"spPCADimension", 14) == 0){
@@ -440,7 +481,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 		*msg = SP_CONFIG_INVALID_INTEGER;
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG,  configFileName, configLineCounter );
 		return;
 	}
 
@@ -468,7 +509,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 		*msg = SP_CONFIG_INVALID_INTEGER;
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG,  configFileName, configLineCounter );
 		return;
 	}
 
@@ -488,7 +529,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 		}
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG,  configFileName, configLineCounter );
 		*msg = SP_CONFIG_INVALID_STRING;
 		return;
 
@@ -505,7 +546,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 		}
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG,  configFileName, configLineCounter );
 		*msg = SP_CONFIG_INVALID_INTEGER;
 		return;
 	}
@@ -536,7 +577,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG, configFileName, configLineCounter );
 		*msg = SP_CONFIG_INVALID_STRING;
 		return;
 
@@ -553,7 +594,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 		}
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG, configFileName, configLineCounter  );
 		*msg = SP_CONFIG_INVALID_INTEGER;
 		return;
 	}
@@ -573,7 +614,7 @@ void assignValueToVariable(SPConfig config, char* variableName,
 		}
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG, configFileName, configLineCounter );
 		*msg = SP_CONFIG_INVALID_STRING;
 		return;
 
@@ -597,14 +638,14 @@ void assignValueToVariable(SPConfig config, char* variableName,
 		}
 		memset(statusMSG, 0, MAX_STRING_LEN);
 		strcpy(statusMSG, INTERNAL_STATUS_CONSTRAIT_NOT_MET);
-		printf(CONSTRAIT_NOT_MET_ERROR_MSG, __FILE__, __LINE__ );
+		printf(CONSTRAIT_NOT_MET_ERROR_MSG, configFileName, configLineCounter );
 		*msg = SP_CONFIG_INVALID_INTEGER;
 		return;
 	}
 
 
 	/*line is invalid (neither a comment/empty line nor system parameter configuration)*/
-	printf(INVALID_CONFIG_LINE_ERROR_MSG, __FILE__, __LINE__);
+	printf(INVALID_CONFIG_LINE_ERROR_MSG, configFileName, configLineCounter );
 	memset(statusMSG, 0, MAX_STRING_LEN);
 	strcpy(statusMSG, INTERNAL_STATUS_INVALID_CONFIG_LINE);
 	*msg = SP_CONFIG_INVALID_STRING;
@@ -626,7 +667,6 @@ bool isLineValid(char* line){
 }
 
 void getCleanWordFromString(char* string, char* word){
-	//	printf("getCleanWordFromString: string=%s, word=%s\n",string,word);
 	int firstLetterIndex = 0;
 	int lastLetterIndex = 0;
 	for(int i = 0; i < strlen(string); i++ ){
@@ -635,14 +675,10 @@ void getCleanWordFromString(char* string, char* word){
 			break;
 		}
 	}
-	//	printf("firstLetterIndex = %d\n",firstLetterIndex);
-	//	printf("strlen(string)=%d\n",strlen(string));
 
 	lastLetterIndex = strlen(string) - 1;
 	for(int t = firstLetterIndex; t < strlen(string); t++){
 		if((*(string + t) == WHITESPACE) || (*(string + t) == TAB)){
-			//			printf("*(string + t) = %c\n",*(string + t));
-			//if((*(string + t)) == WHITESPACE){
 			lastLetterIndex = t;
 			break;
 		}
@@ -669,12 +705,11 @@ bool isStringValid(char* string){
 	if(string == NULL){
 		return false;
 	}
-	int stringLength = strlen(string);
 
 	int i = 0;
 
-	while(*(string+i) != '\0'){
-		if(*(string+i) == HASH || (*(string+i) == WHITESPACE) || (*(string + i) == TAB) ||
+	while(*(string + i) != '\0'){
+		if(*(string + i) == HASH || (*(string + i) == WHITESPACE) || (*(string + i) == TAB) ||
 				(*(string + i) == VERTICAL) || (*(string + i) == NEW_LINE)){ /* #,'\t','\r'.. in the middle of the line is not valid!*/
 			return false;
 		}
@@ -693,6 +728,21 @@ bool isLineCommentLine(char* line){
 	}
 	if(c == HASH){
 		return true;
+	}
+	return false;
+}
+
+bool isThereAHashSignInTheMiddleOfTheLine(char* line) {
+	char c = ' ';
+	int i = 0;
+
+	while( c != '\0') {
+
+		c = *(line + i);
+		i++;
+		if( c == HASH) {
+			return true;
+		}
 	}
 	return false;
 }
@@ -806,7 +856,6 @@ SP_CONFIG_MSG spConfigGetImagePathFeat(char* imagePath, const SPConfig config,
 	strcat(imagePath,indexAsString);
 	strcat(imagePath,FEAT);
 
-	//printf("imagePath = %s\n",imagePath);
 	return SP_CONFIG_SUCCESS;
 
 }

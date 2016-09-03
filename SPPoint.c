@@ -116,4 +116,3 @@ void printPoint(SPPoint p){
 		printf("%f, ",spPointGetAxisCoor(p,i));
 	}
 }
-

@@ -18,7 +18,6 @@ kdTree  kdTreeGetLeft(kdTree node);
 
 kdTree  kdTreeGetRight(kdTree node);
 
-//SPPoint * kdTreeGetData(kdTree node);
 SPPoint kdTreeGetData(kdTree node);
 void destroyKdTree(kdTree node);
 void printPointIndex(kdArray arr, int numOfPoints);

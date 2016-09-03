@@ -18,51 +18,22 @@
 #include "main_aux.h"
 #include <string.h>
 
-
 #define LEN_OF_CHAR 2
 
+/****************
+ Logger Messages
+ ****************/
+#define LOGGER_ERROR_FAILED_TO_ALLOCATE_MEM_FOR_SPPOINT ("Failed to allocate memory for SPPoint array.\n")
+#define LOGGER_ERROR_FAILED_TO_OPEN_FILE ("Failed to open file.\n")
+#define LOGGER_ERROR_FAILED_TO_ALLOCATE_MEMORY ("Failed to allocate memory.\n")
+#define LOGGER_ERROR_FAILED_TO_CREATE_BPQ ("Failed to create bpq.\n")
+#define LOGGER_ERROR_FUNCTION_ARGUMENT_IS_EMPTY ("Function received empty parameter.\n")
+#define LOGGER_ERROR_K_NEAREST_NEIGHBORS_CUR_NODE_AND_QUERY_HAVE_DIFFERENT_DIM ("The dim of query SPPoint is different from the dim of the current node SPPoint.\n")
+#define LOGGER_ERROR_FAILED_TO_CREATE_SP_LIST_ELEMENT ("Failed to create SPListElement.\n")
+#define LOGGER_ERROR_FAILED_TO_ENQUEUE_TO_BPQ ("Failed to enqueue to BPQ.\n")
+#define LOGGER_ERROR_KDTREE_CHOSEN_CHILD_IS_NULL ("KDTree 'ChosenChild' is NULL.\n")
+#define LOGGER_ERROR_NEGATIVE_NUNMBER_OF_PICS ("'Number Of Pictures' variable was negative.\n")
 
-int main(){
-
-	SP_KDTREE_SPLIT_METHOD_TYPE splitMethod = MAX_SPREAD;
-	double data1[2] = {1999.0,1.0};
-	double data2[2]= {29999.0,2.0};
-	double data3[2]= {399999.0,3.0};
-	double data4[2]= {100.0,100.0};
-	double data5[2]= {200.0,200.0};
-	double queryData[2]= {0.0,0.0};
-
-
-	SPPoint p1 = spPointCreate(data1, 2, 0);
-	SPPoint p2 = spPointCreate(data2, 2, 1);
-	SPPoint p3 = spPointCreate(data3, 2, 2);
-	SPPoint p4 = spPointCreate(data4, 2, 3);
-	SPPoint p5 = spPointCreate(data5, 2, 4);
-
-	SPPoint SPPointArr[5] = {p1,p2,p3,p4,p5};
-	kdArray resultArray = Init(SPPointArr , 5);
-	srand(time(NULL));
-	int size = -1;
-	int * ptr = &size;
-
-	kdTree tree = init(resultArray, ptr, splitMethod);
-	SPBPQueue bpq = spBPQueueCreate(3);
-	SPPoint queryPoint = spPointCreate(queryData, 2, 5);
-	kNearestNeighbors(tree, bpq, queryPoint);
-
-	printQueue(bpq);
-
-	spPointDestroy(p1);
-	spPointDestroy(p2);
-	spPointDestroy(p3);
-	spPointDestroy(p4);
-	spPointDestroy(p5);
-	spPointDestroy(queryPoint);
-	destroyKdTree(tree);
-
-	return 0;
-
-}
 
 /* Use malloc to create the point array.
  * For every image go to .feats and read each line (but the first...)
@@ -70,13 +41,18 @@ int main(){
  * Use realloc() to change the size of the point array (keep track of the previous size)
  */
 
+
 SPPoint *extractFromFiles(SPConfig config, int * size){ // WORKING
+
 	SP_CONFIG_MSG msg = SP_CONFIG_SUCCESS;
 	SPPoint* pointArray = (SPPoint*) malloc(sizeof(SPPoint)* 1);
 	/* We return an array of all the points (all features) */
-	if (!pointArray){
-		// PRINT ERROR?
+
+	if (NULL == pointArray) {
+		spLoggerPrintError(LOGGER_ERROR_FAILED_TO_ALLOCATE_MEM_FOR_SPPOINT,__FILE__, __func__, __LINE__ );
+		return NULL;
 	}
+
 	int totalSize = 0; /*size of the point array */
 	int numOfPics = spConfigGetNumOfImages(config, &msg); /* number of images */
 	int dim = spConfigGetPCADim(config,&msg);
@@ -93,22 +69,25 @@ SPPoint *extractFromFiles(SPConfig config, int * size){ // WORKING
 	int index; /* index after convert to int */
 
 	double * data = (double *) calloc (dim,sizeof(double));
-	/* tmp double array containing data to init point - size=dim*/
-	if (!data){
-		// PRINT ERROR?
+
+	if (NULL == data) {
+		spLoggerPrintError(LOGGER_ERROR_FAILED_TO_ALLOCATE_MEMORY,__FILE__, __func__, __LINE__ );
+		return NULL;
 	}
 
 	SPPoint point = NULL; /*point extracted */
 	int point_index = 0; /* current index in pointArray */
-	//SPPoint spPointCreate(double* data, int dim, int index)
 
 	for (i=0; i<numOfPics; i++){ /* for each image */
 		// create featPath (the string) - for the i-th picture
 		spConfigGetImagePathFeat(featPath,config,i);
 		fp = fopen(featPath, "r+");
-		if (!fp){
-			// ERROR
+
+		if (NULL == fp) {
+			spLoggerPrintError(LOGGER_ERROR_FAILED_TO_OPEN_FILE,__FILE__, __func__, __LINE__ );
+			return NULL;
 		}
+
 		/* Get parameters from first line - index and actual number of extracted features  */
 		fgets(line, _MAX, fp);
 		cNumofFeat = strtok(line, s);
@@ -118,8 +97,10 @@ SPPoint *extractFromFiles(SPConfig config, int * size){ // WORKING
 
 		totalSize += numOfFeats; /* increase size for realloc */
 		pointArray = (SPPoint *) realloc(pointArray, totalSize* sizeof(SPPoint));
-		if (!pointArray){
-			//ERROR
+
+		if (NULL == pointArray) {
+			spLoggerPrintError(LOGGER_ERROR_FAILED_TO_ALLOCATE_MEM_FOR_SPPOINT,__FILE__, __func__, __LINE__ );
+			return NULL;
 		}
 
 		for (k=0; k<numOfFeats; k++){ /* each row is a new point to create  */
@@ -152,22 +133,29 @@ SPPoint *extractFromFiles(SPConfig config, int * size){ // WORKING
 		fclose(fp);
 	}
 	free(data);
-	//size = &totalSize;
 	(*size) = totalSize;
 	return pointArray;
 }
 
 
-
+/* Maintain a BPQ of the candidate nearest neighbors, called 'bpq', Set the maximum size of 'bpq' to spKNN*/
 SPBPQueue initBPQ(SPConfig config){
-	/* Maintain a BPQ of the candidate nearest neighbors, called 'bpq', Set the maximum size of 'bpq' to spKNN*/
-	return spBPQueueCreate(spConfigGetspKNN(config));
+
+	SPBPQueue bpq = NULL;
+	bpq = spBPQueueCreate(spConfigGetspKNN(config));
+
+	if (NULL == bpq) {
+		spLoggerPrintError(LOGGER_ERROR_FAILED_TO_CREATE_BPQ,__FILE__, __func__, __LINE__ );
+		return NULL;
+	}
+
+	return bpq;
 }
 
-
-
 void kNearestNeighbors(kdTree currNode, SPBPQueue bpq, SPPoint queryPoint){
-	if (NULL == currNode) {
+
+	if (NULL == currNode || NULL == bpq || NULL == queryPoint ) {
+		spLoggerPrintError(LOGGER_ERROR_FUNCTION_ARGUMENT_IS_EMPTY,__FILE__, __func__, __LINE__ );
 		return;
 	}
 
@@ -181,31 +169,32 @@ void kNearestNeighbors(kdTree currNode, SPBPQueue bpq, SPPoint queryPoint){
 	double currNodeVal = kdTreeGetVal(currNode);
 	int currDimension = kdTreeGetDimension(currNode);
 	double queryPointAxisCoor = spPointGetAxisCoor(queryPoint,currDimension );
-	//	double queryPointAxisCoor =  spPointGetAxisCoor(queryPoint, currDimension);
 
-	/*if currNode is leaf
+	/*if currNode is leaf:
 	 *  Add the current point to the BPQ. Note that this is a no-op
 	 *  if the * point is not as good as the points we've seen so far.*/
 	if (NULL != currPoint) {
 
-
 		if (spPointGetDimension(currPoint) != spPointGetDimension(queryPoint)) {
-			//TODO add logger
+			spLoggerPrintError(LOGGER_ERROR_K_NEAREST_NEIGHBORS_CUR_NODE_AND_QUERY_HAVE_DIFFERENT_DIM,
+					__FILE__, __func__, __LINE__ );
 			return;
 		}
+
 		double distance = spPointL2SquaredDistance(currPoint, queryPoint);
-		//		double distance = abs(currPointAxisCoor - queryPointAxisCoor);
 		element = spListElementCreate(spPointGetIndex(currPoint), distance);
 
 		if (NULL == element){
-			//TODO add logger
+			spLoggerPrintError(LOGGER_ERROR_FAILED_TO_CREATE_SP_LIST_ELEMENT,
+					__FILE__, __func__, __LINE__ );
 			return;
 		}
 
 		bpqReruenMsg = spBPQueueEnqueue(bpq, element);
 		if (bpqReruenMsg != SP_BPQUEUE_SUCCESS) {
+			spLoggerPrintError(LOGGER_ERROR_FAILED_TO_ENQUEUE_TO_BPQ,
+					__FILE__, __func__, __LINE__ );
 			spListElementDestroy(element);
-			//TODO add logger
 			return;
 		}
 
@@ -219,7 +208,8 @@ void kNearestNeighbors(kdTree currNode, SPBPQueue bpq, SPPoint queryPoint){
 	otherChild = (queryPointAxisCoor <= currNodeVal) ? kdTreeGetRight(currNode) : kdTreeGetLeft(currNode);
 
 	if (NULL == chosenChild) {
-		//TODO add logger
+		spLoggerPrintError(LOGGER_ERROR_KDTREE_CHOSEN_CHILD_IS_NULL,
+				__FILE__, __func__, __LINE__ );
 		return;
 	}
 
@@ -234,6 +224,12 @@ void kNearestNeighbors(kdTree currNode, SPBPQueue bpq, SPPoint queryPoint){
 
 
 void addToCount(SPBPQueue bpq,int * allPicsCount){
+
+	if (NULL == allPicsCount || NULL == bpq) {
+		spLoggerPrintError(LOGGER_ERROR_FUNCTION_ARGUMENT_IS_EMPTY,__FILE__, __func__, __LINE__ );
+		return;
+	}
+
 	int size = spBPQueueSize(bpq);
 	SPListElement element;
 
@@ -254,9 +250,10 @@ int extractIndexFromQuery(char * query){ //WORKING
 
 	int index; /* output */
 	char * str;
-
+	char tmpQuery[_MAX];
+	strcpy(tmpQuery,query);
 	/* find last appearance of /  */
-	char * tmp = strtok(query, s1);
+	char * tmp = strtok(tmpQuery, s1);
 	//printf("%s!!",tmp);
 	while( tmp != NULL ) {
 		tmp = strtok(NULL, s1);
@@ -278,24 +275,31 @@ int extractIndexFromQuery(char * query){ //WORKING
 
 int * initCount(int numOfPics){// WORKING
 	if(numOfPics >= 0){
-		int* result = (int*) malloc(sizeof(int)* numOfPics);
-		if (!result){
-			// PRINT ERROR?
+		int * result = (int *) calloc(numOfPics,sizeof(int));
+
+		if (NULL == result) {
+			spLoggerPrintError(LOGGER_ERROR_FAILED_TO_ALLOCATE_MEMORY,
+					__FILE__, __func__, __LINE__ );
+			return NULL;
 		}
 		return result;
 	}
 	else{
-		printf("numOfPics is negative\n");
+		spLoggerPrintError(LOGGER_ERROR_NEGATIVE_NUNMBER_OF_PICS,
+				__FILE__, __func__, __LINE__ );
 		return NULL;
 	}
 }
 
 void destroyCount(int * array){// WORKING
 
+	if ( NULL == array) {
+		return;
+	}
+
 	free(array);
 
 }
-
 
 
 
@@ -311,9 +315,13 @@ int compareHits (const void * a, const void * b){//WORKING
 Img * initImgArray(int * allPicsCount, int numOfPics){ //WORKING
 	/* Convert from (int *) to (Img *) and order by hits */
 	Img * hitsArray = (Img *) malloc(numOfPics* sizeof(Img)); /*an array with "num" entries - to count the hits*/
-	if ( !hitsArray ){
-		//Allocation error
+
+	if ( NULL == hitsArray ) {
+		spLoggerPrintError(LOGGER_ERROR_FAILED_TO_ALLOCATE_MEMORY,
+				__FILE__, __func__, __LINE__ );
+		return NULL;
 	}
+
 	/*initialize struct array with empty images*/
 	for(int i = 0; i < numOfPics; i++){
 		hitsArray[i].index = i;

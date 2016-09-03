@@ -79,6 +79,7 @@ double spListElementGetValue(SPListElement data) {
 }
 
 int spListElementCompare(SPListElement e1, SPListElement e2){
+
 	assert(e1!=NULL && e2!=NULL);
 	if(e1->value == e2->value){
 		return e1->index - e2->index;

@@ -180,17 +180,98 @@ SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config);
 void spConfigDestroy(SPConfig config);
 
 
+/*
+*
+*@ return
+* - true - if the string has no Hash sign / spaces / tabs
+* - false - otherwise
+*/
+
 bool isStringValid(char* string);
+
+/*
+*
+*@ return
+* - true - if a none-comment line doesn't contain any Hash signs
+* - false - otherwise
+*/
+
 bool isLineValid(char* line);
+
+/*
+*
+*@ return
+* - true - iff a line starts with a Hash signs
+* - false - otherwise
+*/
+
 bool isLineCommentLine(char* string);
+
+/*
+* after the function the 'clean' variable or value will be stored in 'word'.
+* @param string - the string we want to 'clean' ()
+* this function
+*@ return
+* - true - iff a line starts with a Hash signs
+* - false - otherwise
+*/
 void getCleanWordFromString(char* string, char* word);
+
+/*
+*
+*@ return
+* - true - iff a non-comment line contains a Hash sign
+* - false - otherwise
+*/
+
+bool isThereAHashSignInTheMiddleOfTheLine(char* line);
+
+/*
+* this function assigns variables with the suitable value.
+* @param config - the config
+* @param variableName - the variable we want to assign to
+* @param Value - the value to be assigned
+
+*/
+
 void assignValueToVariable(SPConfig config, char* variableName,
-		char* value, char* statusMSG,  SP_CONFIG_MSG* msg);
-//void assignValueToVariable(SPConfig config, char* variableName, char* value, char* statusMSG);
+		char* value, char* statusMSG,
+		SP_CONFIG_MSG* msg, char* configFileName, int configLineCounter );
+
+/*
+* this function prints all variables values.
+* @param config - the config
+*/
+
 void printVariableValuesOfConfig(SPConfig config);
-//SPConfig spConfigCreate(const char* filename);//TODO remove!!!
+
+/*
+* This function assigns default values to all relevant variables:
+* spPCADimension, spPCAFilename, spNumOfFeatures, spExtractionMode, spMinimalGUI
+* spNumOfSimilarImages, spKNN, spKDTreeSplitMethod, spLoggerLevel, spLoggerFilename
+* @param config - the config
+*/
+
 void assignDefaultValues(SPConfig config);
+
+/*
+* This function checks if a numeric value is valid
+*@ return
+* - true - iff the numeric value doesn't contain decimal point or isn't negative number
+* - false - otherwise
+*/
+
 bool isNumericValueValid(char* number);
+
+/*
+ * Returns the PCA path.
+ * @param config - the configuration structure
+ * @param msg - pointer in which the msg returned by the function is stored
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL or pcaPath == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
+
 SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config);
 char* spConfigGetImageDirectory(SPConfig config);
 char* spConfigGetspImagesPrefix(SPConfig config);
